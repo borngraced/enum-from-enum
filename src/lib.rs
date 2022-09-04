@@ -12,7 +12,7 @@ use syn::token::Comma;
 use syn::{parse_macro_input, DeriveInput};
 
 /// `EnumFromEnum` is very useful for generating `From<T>` trait from one enum to another enum
-/// Currently, this crate can only convert enum variant with only some basic inner type such as `String`, Another enum
+/// Currently, this crate can only convert enum variant with only some basic inner type such as `String`, and `Enum`
 /// type just like the example below. Can not be used for tuple, struct etc for now .
 ///
 /// More support will be added soon
