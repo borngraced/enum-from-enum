@@ -8,8 +8,7 @@ type just like the example below. Can not be used for tuple, struct etc for now 
 ```rust
 use enum_from_enum::EnumFromEnum;
 use derive_more::Display;
-///
- // E.G, this converts from whatever Bar is to Foo::Bar(String) and
+// E.G, this converts from whatever Bar is to Foo::Bar(String) and
 // whatever FooBar to Foo::FooBar(FooBar)
 #[derive(Debug, EnumFromEnum)]
 pub enum Foo {
