@@ -1,9 +1,9 @@
-# `EnumFromEnum` is very useful for generating `From<T>` trait from one enum to another enum.
+### `EnumFromEnum` is very useful for generating `From<T>` trait from one enum to another enum.
 
 Currently, this crate can only convert enum variant with only inner type such as `String` and `Enum`
 type just like the example below. Can not be used for tuple, struct etc for now .
 
-### USAGE:
+## USAGE:
 
 ```rust
 use enum_from_enum::EnumFromEnum;
