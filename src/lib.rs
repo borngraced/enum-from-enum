@@ -23,7 +23,7 @@ use syn::{parse_macro_input, DeriveInput};
 /// ```rust
 /// use enum_from_enum::EnumFromEnum;
 /// use derive_more::Display;
-///
+
 ///  // E.G, this converts from whatever Bar is to Foo::Bar(String) and
 /// // whatever FooBar to Foo::FooBar(FooBar)
 /// #[derive(Debug, EnumFromEnum)]
@@ -33,21 +33,21 @@ use syn::{parse_macro_input, DeriveInput};
 ///     #[enum_from_enum("FooBar")]
 ///     FooBar(FooBar),
 /// }
-///
+
 /// #[derive(Debug, Display)]
 /// pub enum Bar {
 ///     Foo(String),
 /// }
-///
+
 /// #[derive(Debug, Display)]
 /// pub enum FooBar {
 ///     Foo(String),
 /// }
-///
+
 /// fn foo_fn() -> Result<(), Foo> {
 ///     Ok(bar_fn()?)
 /// }
-///
+
 /// fn bar_fn() -> Result<(), Bar> {
 ///     Err(Bar::Foo("Err".to_string()))
 /// }
@@ -147,7 +147,7 @@ pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumDataPunctu
                     }
                     return syn::Result::Ok(MapEnumDataPunctuated {
                         variant_ident: variant_ident.to_owned(),
-                         nested_meta: nested,
+                        nested_meta: nested,
                         inner_ident: None,
                     });
                 }
@@ -182,9 +182,7 @@ fn get_variant_unnamed_ident(fields: syn::Fields) -> Option<Ident> {
     None
 }
 
-fn map_enum_data_from_variant(
-    variants: Punctuated<syn::Variant, Comma>,
-) -> Vec<MapEnumData> {
+fn map_enum_data_from_variant(variants: Punctuated<syn::Variant, Comma>) -> Vec<MapEnumData> {
     let mut meta_vec = vec![];
     for variant in variants.iter() {
         let _ = get_attributes(variant.to_owned()).map(|attr| {
