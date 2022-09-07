@@ -7,7 +7,7 @@ use enum_from_enum::EnumFromEnum;
 pub enum Foo {
     #[enum_from_enum("Bar")]
     Bar(String),
-    #[enum_from_enum("")]
+    #[enum_from_enum("FooBar")]
     FooBar(FooBar),
 }
 
@@ -29,6 +29,6 @@ fn bar_fn() -> Result<(), Bar> {
     Err(Bar::Foo("Err".to_string()))
 }
 
-fn main(){
+fn main() {
     println!("HELLO WORLD");
 }

@@ -58,36 +58,35 @@ use syn::{parse_macro_input, DeriveInput};
 #[proc_macro_derive(EnumFromEnum, attributes(enum_from_enum))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
-    let name = &ast.ident;
+    let enum_name = &ast.ident;
     let variants = if let syn::Data::Enum(syn::DataEnum { variants, .. }) = ast.data {
         variants
     } else {
         panic!("Couldn't fetch variants")
     };
 
-    let construct_meta_binding = map_field_meta(variants);
-    let construct_meta = construct_meta_binding.iter().map(|m| {
+    let enum_data = map_enum_data_from_variant(variants);
+    let construct_meta = enum_data.iter().map(|m| {
         let variant_ident = &m.variant_ident;
         if let syn::NestedMeta::Lit(syn::Lit::Str(str)) = &m.meta {
             if str.value().is_empty() {
-            return Some(quote_spanned!(
+                return Some(quote_spanned!(
                 str.span() => compile_error!("Expected this to take a `type`")
-                ))
+                ));
             };
-            let lit_ident = syn::Ident::new_raw(&str.value(), str.span());
-            let inner_ident = get_inner_ident(m.inner_ident.to_owned());
-            return match inner_ident {
+            let ident_to_impl_from = syn::Ident::new_raw(&str.value(), str.span());
+            return match get_inner_ident_type(m.inner_ident.to_owned()) {
                 InnerIdentTypes::Named => Some(quote! {
-                    impl From<#lit_ident> for #name {
-                        fn from(err: #lit_ident) -> #name {
-                            #name::#variant_ident(err)
+                    impl From<#ident_to_impl_from> for #enum_name {
+                        fn from(err: #ident_to_impl_from) -> #enum_name {
+                            #enum_name::#variant_ident(err)
                         }
                     }
                 }),
                 _ => Some(quote! {
-                    impl From<#lit_ident> for #name {
-                        fn from(err: #lit_ident) -> #name {
-                            #name::#variant_ident(err.to_string())
+                    impl From<#ident_to_impl_from> for #enum_name {
+                        fn from(err: #ident_to_impl_from) -> #enum_name {
+                            #enum_name::#variant_ident(err.to_string())
                         }
                     }
                 }),
@@ -100,27 +99,27 @@ pub fn derive(input: TokenStream) -> TokenStream {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct MapEnumNestedIter {
+struct MapEnumDataPunctuated {
     variant_ident: Ident,
     nested_meta: Punctuated<syn::NestedMeta, Comma>,
     inner_ident: Option<Ident>,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct MapEnumMeta {
-    pub(crate) variant_ident: Ident,
-    pub(crate) meta: syn::NestedMeta,
-    pub(crate) inner_ident: Option<Ident>,
+struct MapEnumData {
+    variant_ident: Ident,
+    meta: syn::NestedMeta,
+    inner_ident: Option<Ident>,
 }
 
 #[derive(Debug)]
-pub(crate) enum InnerIdentTypes {
+enum InnerIdentTypes {
     String,
     Named,
     Unnamed,
 }
 
-pub(crate) fn get_inner_ident(ident: Option<Ident>) -> InnerIdentTypes {
+fn get_inner_ident_type(ident: Option<Ident>) -> InnerIdentTypes {
     if let Some(ident) = ident {
         let n = Ident::new("String", ident.span());
         return if ident == n {
@@ -132,43 +131,42 @@ pub(crate) fn get_inner_ident(ident: Option<Ident>) -> InnerIdentTypes {
     InnerIdentTypes::Unnamed
 }
 
-pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumNestedIter, syn::Error> {
+pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumDataPunctuated, syn::Error> {
     let variant_ident = &variants.ident;
     let fields = &variants.fields;
-    let attributes = &variants.attrs; 
-    for attribute in attributes {
+    for attribute in variants.attrs {
         if let Ok(meta) = attribute.parse_meta() {
             match meta {
                 syn::Meta::List(syn::MetaList { nested, .. }) => {
                     if let Some(ident) = get_variant_unnamed_ident(fields.to_owned()) {
-                        return syn::Result::Ok(MapEnumNestedIter {
+                        return syn::Result::Ok(MapEnumDataPunctuated {
                             variant_ident: variant_ident.to_owned(),
-                            nested_meta: nested.to_owned(),
-                            inner_ident: Some(ident.to_owned()),
+                            nested_meta: nested,
+                            inner_ident: Some(ident),
                         });
-                    } 
-                    return syn::Result::Ok(MapEnumNestedIter {
+                    }
+                    return syn::Result::Ok(MapEnumDataPunctuated {
                         variant_ident: variant_ident.to_owned(),
-                        nested_meta: nested.to_owned(),
+                         nested_meta: nested,
                         inner_ident: None,
                     });
                 }
                 _ => {
                     return syn::Result::Err(syn::Error::new_spanned(
-                        attribute.clone().tokens,
+                        attribute.tokens,
                         "expected #[enum_from_displaying(..)]".to_string(),
                     ));
                 }
             };
         };
     }
-    return syn::Result::Err(syn::Error::new_spanned(
+    syn::Result::Err(syn::Error::new_spanned(
         variant_ident.to_token_stream(),
         "Operation Error.".to_string(),
-    ));
+    ))
 }
 
-pub(crate) fn get_variant_unnamed_ident(fields: syn::Fields) -> Option<Ident> {
+fn get_variant_unnamed_ident(fields: syn::Fields) -> Option<Ident> {
     if let syn::Fields::Unnamed(fields_unnamed) = fields {
         let syn::FieldsUnnamed { unnamed, .. } = fields_unnamed;
         if let Some(field) = unnamed.iter().next() {
@@ -184,13 +182,15 @@ pub(crate) fn get_variant_unnamed_ident(fields: syn::Fields) -> Option<Ident> {
     None
 }
 
-pub(crate) fn map_field_meta(variants: Punctuated<syn::Variant, Comma>) -> Vec<MapEnumMeta> {
+fn map_enum_data_from_variant(
+    variants: Punctuated<syn::Variant, Comma>,
+) -> Vec<MapEnumData> {
     let mut meta_vec = vec![];
     for variant in variants.iter() {
         let _ = get_attributes(variant.to_owned()).map(|attr| {
-            for meta in attr.clone().nested_meta.iter() {
+            for meta in attr.nested_meta.iter() {
                 let variant_ident = attr.clone().variant_ident.to_owned();
-                meta_vec.push(MapEnumMeta {
+                meta_vec.push(MapEnumData {
                     variant_ident,
                     meta: meta.clone(),
                     inner_ident: attr.inner_ident.clone(),
