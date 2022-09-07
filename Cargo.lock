@@ -3,7 +3,13 @@
 version = 3
 
 [[package]]
-name = "derive_impl_macro"
+name = "dissimilar"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c97b9233581d84b8e1e689cdd3a47b6f69770084fc246e86a7f78b0d9c1d4a5"
+
+[[package]]
+name = "enum_from_enum"
 version = "0.1.0"
 dependencies = [
  "expand",
@@ -12,12 +18,6 @@ dependencies = [
  "syn",
  "trybuild",
 ]
-
-[[package]]
-name = "dissimilar"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c97b9233581d84b8e1e689cdd3a47b6f69770084fc246e86a7f78b0d9c1d4a5"
 
 [[package]]
 name = "expand"

@@ -7,6 +7,7 @@ use proc_macro2::Ident;
 use quote::quote;
 use quote::ToTokens;
 use quote::__private::ext::RepToTokensExt;
+use quote::quote_spanned;
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{parse_macro_input, DeriveInput};
@@ -65,32 +66,32 @@ pub fn derive(input: TokenStream) -> TokenStream {
     };
 
     let construct_meta_binding = map_field_meta(variants);
-    let construct_meta = construct_meta_binding.iter().map(|mm| {
-        let variant_ident = &mm.variant_ident;
-
-        if let syn::NestedMeta::Lit(syn::Lit::Str(str)) = &mm.meta {
+    let construct_meta = construct_meta_binding.iter().map(|m| {
+        let variant_ident = &m.variant_ident;
+        if let syn::NestedMeta::Lit(syn::Lit::Str(str)) = &m.meta {
+            if str.value().is_empty() {
+            return Some(quote_spanned!(
+                str.span() => compile_error!("Expected this to take a `type`")
+                ))
+            };
             let lit_ident = syn::Ident::new_raw(&str.value(), str.span());
-            let inner_ident = get_inner_ident(mm.inner_ident.to_owned());
-            match inner_ident {
-                InnerIdentTypes::Named => {
-                    return Some(quote! {
-                        impl From<#lit_ident> for #name {
-                            fn from(err: #lit_ident) -> #name {
-                                #name::#variant_ident(err)
-                            }
+            let inner_ident = get_inner_ident(m.inner_ident.to_owned());
+            return match inner_ident {
+                InnerIdentTypes::Named => Some(quote! {
+                    impl From<#lit_ident> for #name {
+                        fn from(err: #lit_ident) -> #name {
+                            #name::#variant_ident(err)
                         }
-                    });
-                }
-                _ => {
-                    return Some(quote! {
-                        impl From<#lit_ident> for #name {
-                            fn from(err: #lit_ident) -> #name {
-                                #name::#variant_ident(err.to_string())
-                            }
+                    }
+                }),
+                _ => Some(quote! {
+                    impl From<#lit_ident> for #name {
+                        fn from(err: #lit_ident) -> #name {
+                            #name::#variant_ident(err.to_string())
                         }
-                    })
-                }
-            }
+                    }
+                }),
+            };
         }
         None
     });
@@ -116,8 +117,7 @@ pub(crate) struct MapEnumMeta {
 pub(crate) enum InnerIdentTypes {
     String,
     Named,
-    None,
-    // TODO
+    Unnamed,
 }
 
 pub(crate) fn get_inner_ident(ident: Option<Ident>) -> InnerIdentTypes {
@@ -129,34 +129,33 @@ pub(crate) fn get_inner_ident(ident: Option<Ident>) -> InnerIdentTypes {
             InnerIdentTypes::Named
         };
     }
-    InnerIdentTypes::None
+    InnerIdentTypes::Unnamed
 }
 
 pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumNestedIter, syn::Error> {
     let variant_ident = &variants.ident;
     let fields = &variants.fields;
-    let attr = &variants.attrs;
-    for attr in attr {
-        if let Ok(meta) = attr.parse_meta() {
+    let attributes = &variants.attrs; 
+    for attribute in attributes {
+        if let Ok(meta) = attribute.parse_meta() {
             match meta {
                 syn::Meta::List(syn::MetaList { nested, .. }) => {
-                    if let Some(ident) = get_variant_unamed_ident(fields.to_owned()) {
+                    if let Some(ident) = get_variant_unnamed_ident(fields.to_owned()) {
                         return syn::Result::Ok(MapEnumNestedIter {
                             variant_ident: variant_ident.to_owned(),
                             nested_meta: nested.to_owned(),
                             inner_ident: Some(ident.to_owned()),
                         });
-                    } else {
-                        return syn::Result::Ok(MapEnumNestedIter {
-                            variant_ident: variant_ident.to_owned(),
-                            nested_meta: nested.to_owned(),
-                            inner_ident: None,
-                        });
-                    };
+                    } 
+                    return syn::Result::Ok(MapEnumNestedIter {
+                        variant_ident: variant_ident.to_owned(),
+                        nested_meta: nested.to_owned(),
+                        inner_ident: None,
+                    });
                 }
                 _ => {
                     return syn::Result::Err(syn::Error::new_spanned(
-                        attr.clone().tokens,
+                        attribute.clone().tokens,
                         "expected #[enum_from_displaying(..)]".to_string(),
                     ));
                 }
@@ -169,7 +168,7 @@ pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumNestedIter
     ));
 }
 
-pub(crate) fn get_variant_unamed_ident(fields: syn::Fields) -> Option<Ident> {
+pub(crate) fn get_variant_unnamed_ident(fields: syn::Fields) -> Option<Ident> {
     if let syn::Fields::Unnamed(fields_unnamed) = fields {
         let syn::FieldsUnnamed { unnamed, .. } = fields_unnamed;
         if let Some(field) = unnamed.iter().next() {
