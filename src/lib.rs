@@ -12,7 +12,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{parse_macro_input, DeriveInput};
 
-/// `EnumFromEnum` is very useful for generating `From<T>` trait from one enum to another enum
+/// `EnumFromVariant` is very useful for generating `From<T>` trait from one enum to another enum
 /// Currently, this crate can only convert enum variant with only some basic inner type such as `String`, and `Enum`
 /// type just like the example below. Can not be used for tuple, struct etc for now .
 ///
@@ -21,16 +21,16 @@ use syn::{parse_macro_input, DeriveInput};
 ///
 /// ### USAGE:
 /// ```rust
-/// use enum_from_enum::EnumFromEnum;
+/// use enum_from_variant::EnumFromVariant;
 /// use derive_more::Display;
 
 ///  // E.G, this converts from whatever Bar is to Foo::Bar(String) and
 /// // whatever FooBar to Foo::FooBar(FooBar)
-/// #[derive(Debug, EnumFromEnum)]
+/// #[derive(Debug, EnumFromVariant)]
 /// pub enum Foo {
-///     #[enum_from_enum("Bar")]
+///     #[enum_from_variant("Bar")]
 ///     Bar(String),
-///     #[enum_from_enum("FooBar")]
+///     #[enum_from_variant("FooBar")]
 ///     FooBar(FooBar),
 /// }
 
@@ -55,7 +55,8 @@ use syn::{parse_macro_input, DeriveInput};
 ///
 ///
 ///
-#[proc_macro_derive(EnumFromEnum, attributes(enum_from_enum))]
+
+#[proc_macro_derive(EnumFromVariant, attributes(enum_from_variant))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let enum_name = &ast.ident;
@@ -74,7 +75,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 str.span() => compile_error!("Expected this to take a `type`")
                 ));
             };
-            let ident_to_impl_from = syn::Ident::new_raw(&str.value(), str.span());
+            let ident_to_impl_from = Ident::new(&str.value(), str.span());
             return match get_inner_ident_type(m.inner_ident.to_owned()) {
                 InnerIdentTypes::Named => Some(quote! {
                     impl From<#ident_to_impl_from> for #enum_name {
@@ -150,13 +151,13 @@ pub(crate) fn get_attributes(variants: syn::Variant) -> Result<MapEnumDataPunctu
                         nested_meta: nested,
                         inner_ident: None,
                     });
-                }
+                },
                 _ => {
                     return syn::Result::Err(syn::Error::new_spanned(
                         attribute.tokens,
-                        "expected #[enum_from_displaying(..)]".to_string(),
+                        "expected #[enum_from_variant(..)]".to_string(),
                     ));
-                }
+                },
             };
         };
     }
@@ -198,3 +199,4 @@ fn map_enum_data_from_variant(variants: Punctuated<syn::Variant, Comma>) -> Vec<
     }
     meta_vec
 }
+
