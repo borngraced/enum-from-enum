@@ -1,39 +1,43 @@
-### `EnumFromVariant` is very useful for generating `From<T>` trait from one enum to another enum.
+`enum-from-variant` crate provides the EnumFromVariant macro, which simplifies the generation of the From<T> trait for converting one enum variant to another enum variant. This is particularly useful when you need to handle error conversions or map different enum types in your Rust code.
 
-Currently, this crate can only convert enum variant with only inner type such as `String` and `Enum`
-type just like the example below. Can not be used for tuple, struct etc for now .
+### USAGE:
 
-## USAGE:
+Consider the following example where we convert between different enum types using the EnumFromVariant macro:
 
 ```rust
 use enum_from_variant::EnumFromVariant;
 use derive_more::Display;
 
-// E.G, this converts from whatever Bar is to Foo::Bar(String) and.
-// whatever FooBar is to Foo::FooBar(FooBar).
 #[derive(Debug, EnumFromVariant)]
-pub enum Foo {
-    #[enum_from_variant("Bar")]
-    Bar(String),
-    #[enum_from_variant("FooBar")]
-    FooBar(FooBar),
+pub enum MainError {
+    #[enum_from_variant("NetworkError")]
+    Network(String),
+    #[enum_from_variant("DatabaseError")]
+    Database(DatabaseError),
 }
 
 #[derive(Debug, Display)]
-pub enum Bar {
-    Foo(String),
+pub enum NetworkError {
+    Timeout(String),
 }
 
 #[derive(Debug, Display)]
-pub enum FooBar {
-    Foo(String),
+pub enum DatabaseError {
+    ConnectionFailed(String),
 }
 
-fn foo_fn() -> Result<(), Foo> {
-    Ok(bar_fn()?)
+fn network_request() -> Result<(), MainError> {
+    Err(NetworkError::Timeout("Network timeout".to_string()).into())
 }
 
-fn bar_fn() -> Result<(), Bar> {
-    Err(Bar::Foo("Err".to_string()))
+fn main() {
+    match network_request() {
+        Ok(_) => println!("Request succeeded"),
+        Err(e) => println!("Error: {:?}", e),
+    }
 }
 ```
+
+### Limitations
+`Current Support`: The macro only supports enum variants with basic inner types like String and other enums.
+`Unsupported Types`: Tuple variants, struct variants, and more complex inner types are not supported at this time.

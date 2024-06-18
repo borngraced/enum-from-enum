@@ -1,5 +1,5 @@
-///! Rust Derive Impl from enum
-///
+//! Rust Derive Impl from enum
+//
 extern crate quote;
 
 use proc_macro::TokenStream;
@@ -12,11 +12,9 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{parse_macro_input, DeriveInput};
 
-/// `EnumFromVariant` is very useful for generating `From<T>` trait from one enum to another enum
-/// Currently, this crate can only convert enum variant with only some basic inner type such as `String`, and `Enum`
-/// type just like the example below. Can not be used for tuple, struct etc for now .
-///
-/// More support will be added soon
+/// `enum-from-variant` crate provides the EnumFromVariant macro, 
+/// which simplifies the generation of the From<T> trait for converting one enum variant to another enum variant. 
+/// This is particularly useful when you need to handle error conversions or map different enum types in your Rust code.
 ///
 ///
 /// ### USAGE:
@@ -51,9 +49,39 @@ use syn::{parse_macro_input, DeriveInput};
 /// fn bar_fn() -> Result<(), Bar> {
 ///     Err(Bar::Foo("Err".to_string()))
 /// }
+///
+/// use enum_from_variant::EnumFromVariant;
+/// use derive_more::Display;
+/// 
+/// #[derive(Debug, EnumFromVariant)]
+/// pub enum MainError {
+///     #[enum_from_variant("NetworkError")]
+///     Network(String),
+///     #[enum_from_variant("DatabaseError")]
+///     Database(DatabaseError),
+///  }
+///
+/// #[derive(Debug, Display)]
+/// pub enum NetworkError {
+///     Timeout(String),
+///}
+
+/// #[derive(Debug, Display)]
+/// pub enum DatabaseError {
+///     ConnectionFailed(String),
+/// }
+
+/// fn network_request() -> Result<(), MainError> {
+///    Err(NetworkError::Timeout("Network timeout".to_string()).into())
+/// }
+
+/// fn main() {
+///    match network_request() {
+///        Ok(_) => println!("Request succeeded"),
+///        Err(e) => println!("Error: {:?}", e),
+///    }
+/// }
 /// ```
-///
-///
 ///
 
 #[proc_macro_derive(EnumFromVariant, attributes(enum_from_variant))]
