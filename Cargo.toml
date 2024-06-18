@@ -3,6 +3,13 @@ name = "enum_from_variant"
 version = "0.1.0"
 edition = "2021"
 author = "Samuel Onoja"
+license = "MIT"
+description = "A Rust macro to generate From<T> trait implementations for enum variants, simplifying error conversions and enum mapping."
+keywords = ["enum", "conversion", "from-trait", "macro", "error-handling"]
+categories = ["macros", "error-handling", "data-structures"]
+homepage = "https://github.com/borngraced/enum-from-variant"
+repository = "https://github.com/borngraced/enum-from-variant"
+documentation = "https://docs.rs/enum-from-variant"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

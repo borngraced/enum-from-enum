@@ -12,8 +12,8 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{parse_macro_input, DeriveInput};
 
-/// `enum-from-variant` crate provides the EnumFromVariant macro, 
-/// which simplifies the generation of the From<T> trait for converting one enum variant to another enum variant. 
+/// `enum-from-variant` crate provides the `EnumFromVariant` macro, 
+/// which simplifies the generation of the `From<T>` trait for converting one enum variant to another enum variant. 
 /// This is particularly useful when you need to handle error conversions or map different enum types in your Rust code.
 ///
 ///
